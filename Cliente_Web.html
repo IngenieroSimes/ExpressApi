@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Cliente de API de Contactos</title>
+</head>
+
+<body>
+    <h1>Cliente de API de Contactos</h1>
+    <form id="getContactsForm">
+        <button type="button" onclick="obtenerContactos()">Obtener Contactos</button>
+    </form>
+
+    <h2>Crear Nuevo Contacto</h2>
+    <form id="crearContactoForm" onsubmit="crearContacto(event)">
+        <input type="text" id="apellido" placeholder="Apellido" required>
+        <input type="text" id="nombres" placeholder="Nombres" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <button type="submit">Crear Contacto</button>
+    </form>
+
+    <h2>Actualizar Contacto</h2>
+    <form id="actualizarContactoForm" onsubmit="actualizarContacto(event)">
+        <input type="text" id="idContacto" placeholder="ID del Contacto" required>
+        <input type="text" id="nuevoApellido" placeholder="Apellido Actualizado">
+        <input type="text" id="nuevoNombre" placeholder="Nombres Actualizados">
+        <input type="email" id="nuevoEmail" placeholder="Email Actualizado">
+        <button type="submit">Actualizar Contacto</button>
+    </form>
+
+    <h2>Eliminar Contacto</h2>
+    <form id="borrarContactoForm" onsubmit="borrarContacto(event)">
+        <input type="text" id="idcontactoBorrar" placeholder="ID del Contacto a Eliminar" required>
+        <button type="submit">Eliminar Contacto</button>
+    </form>
+    <br><hr><br>
+    <div id="response"></div>
+
+    <script>
+        const baseUrl = 'http://localhost:3020/api/1.0/contactos';
+
+        function obtenerContactos() {
+            fetch(baseUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // version tabla 
+                    /*
+                    let salida = '<table width="60%" border="1"><thead> Lista de Contactos Registrados</thead>'
+                    let listaContactos = [];
+                    listaContactos = data;
+                    listaContactos.forEach((contacto) => {
+                        salida += `<tr><td>${contacto.idContacto}</td><td>${contacto.apellido}</td><td>${contacto.nombres} 
+                        </td><td>${contacto.email}</td></tr>`
+                    })
+                    salida += '</table>'
+                    document.getElementById('response').innerHTML = salida;
+                    /////////////////////
+                    
+                    // version fácil
+                    */
+                    document.getElementById('response').innerText = JSON.stringify(data,null,2);
+                });
+        }
+
+        function crearContacto(event) {
+            event.preventDefault();
+            const newContact = {
+                apellido: document.getElementById('apellido').value,
+                nombres: document.getElementById('nombres').value,
+                email: document.getElementById('email').value
+            };
+
+            fetch(baseUrl + '/nuevo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newContact),
+            })
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('response').innerText = data;
+                    console.log(data); // Mostrar la respuesta en la consola del navegador
+                })
+                .catch(error => {
+                    console.error('Error en la solicitud:', error);
+                });
+                // obtenerContactos(event);
+        }
+
+        function actualizarContacto(event) {
+            event.preventDefault();
+
+            const nuevoContacto = {
+                idContacto: document.getElementById('idContacto').value,
+                apellido: document.getElementById('nuevoApellido').value,
+                nombres: document.getElementById('nuevoNombre').value,
+                email: document.getElementById('nuevoEmail').value
+            };
+
+            fetch(`${baseUrl}` + '/modificar', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(nuevoContacto),
+            })
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('response').innerText = data;
+                    console.log(data); // Mostrar la respuesta en la consola del navegador
+                })
+                .catch(error => {
+                    console.error('Error en la solicitud:', error);
+                });
+                //obtenerContactos(event);
+        }
+
+        function borrarContacto(event) {
+            event.preventDefault();
+
+            const idContacto = document.getElementById('idcontactoBorrar').value;
+
+            fetch(`${baseUrl}/${idContacto}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('response').innerText = data;
+                    console.log(data); // Mostrar la respuesta en la consola del navegador
+                })
+                .catch(error => {
+                    console.error('Error en la solicitud:', error);
+                });
+                //obtenerContactos(event);
+        }
+    </script>
+</body>
+
+</html>
