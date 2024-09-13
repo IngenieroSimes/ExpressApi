@@ -5,10 +5,10 @@ import { createConnection } from 'mysql2';
 
 // Crear una conexión a la base de datos MySQL
 const db = createConnection({
-    host: 'localhost', // Cambia esto si tu base de datos está en otro servidor
-    user: 'root',
-    password: 'root',
-    database: 'base1',
+    host: DB_HOST, // Cambia esto si tu base de datos está en otro servidor
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
     connectTimeout: 60000,
 });
 // Conectar a la base de datos
