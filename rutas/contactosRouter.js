@@ -41,7 +41,7 @@ contactosRouter.get('/',(req,res)=>{
     db.query(sql, (err, rows) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);            
-            res.send('Error al consultar la base de datos: ' + DB_NAME );
+            res.send('Error al consultar la base de datos: ' + DB_NAME + ' Se produjo el siguiente error: ' + err );
         } else { 
             console.log(rows); 
             res.json(rows)             
