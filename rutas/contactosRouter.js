@@ -1,6 +1,6 @@
 import { Router, json, text } from 'express';
 export const contactosRouter=Router();
-
+import { DB_HOST,DB_NAME,DB_PORT,DB_USER,DB_PASSWORD } from '../config.js';
 import { createConnection } from 'mysql2';
 
 // Crear una conexión a la base de datos MySQL
@@ -41,7 +41,7 @@ contactosRouter.get('/',(req,res)=>{
     db.query(sql, (err, rows) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);            
-            res.send('Error interno del servidor.');
+            res.send('Error al consultar la base de datos: ' + DB_NAME );
         } else { 
             console.log(rows); 
             res.json(rows)             
