@@ -45,10 +45,10 @@ contactosRouter.get('/', (req, res) => {
     pool.getConnection()
         .then(connection => {
             connection.query(sql)
-                .then(([rows]) => {
+                .then((rows) => {
                     connection.release()
-                    console.log([rows]);
-                    res.json([rows]);
+                    console.log(rows);
+                    res.json(rows);
                 })
                 .catch(error => {
                     connection.release();
