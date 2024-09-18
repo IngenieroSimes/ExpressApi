@@ -1,36 +1,31 @@
 import { Router, json, text } from 'express';
-import { DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PASSWORD } from '../config.js';
+import pool from './db.js';
+import { Server } from 'socket.io';
+
 export const contactosRouter = Router();
 
-//import { createConnection } from 'mysql2';
-import pool from './db.js';
-
-// Crear una conexión a la base de datos MySQL
-/*
-const db = createConnection({
-    host: DB_HOST, // Cambia esto si tu base de datos está en otro servidor
-    user: DB_USER,
-    password: DB_PASSWORD,
-    database: DB_NAME,
-    connectTimeout: 60000,
-});
-// Conectar a la base de datos
-db.connect((err) => {
-    if (err) {
-        console.error('Error al conectar a la base de datos:', err);
-        return;
+// Configuración de Socket.IO
+let io;
+export const configureSocket = (server) => {
+  io = new Server(server, {
+    cors: {
+      origin: "*", // Permite conexiones desde cualquier origen
+      methods: ["GET", "POST","PUT","DELETE"]
     }
-    console.log(`Conexión a la base de datos MySQL: ${DB_NAME} establecida`);
-});
-*/
-// ruta de contactos 
-// previo a la api, procesamos el midlleware para que devuelva json / texto
+  });
+  
+  io.on('connection', (socket) => {
+    console.log('Nuevo cliente conectado');
+    
+    socket.on('disconnect', () => {
+      console.log('Cliente desconectado');
+    });
+  });
+};
 
 contactosRouter.use(json());
 contactosRouter.use(text());
 
-// vamos a construir una API REST DE CONTACTOS QUE IMPLEMENTARÁ CRUD
-// devuelve todos los contactos
 class Contacto {
     constructor(ap, nom, em) {
         this.apellido = ap;
@@ -38,6 +33,8 @@ class Contacto {
         this.email = em;
     }
 }
+
+// ... (mantener las rutas GET existentes sin cambios) ...
 
 contactosRouter.get('/', (req, res) => {
     const sql = 'SELECT * FROM contactos';
@@ -105,30 +102,12 @@ contactosRouter.get('/:id', (req, res) => {
         })
 })
 
-/*
-    db.query(sql, idContacto, (err, rows) => {
-        if (err) {
-            console.error('Error al consultar la base de datos:', err);
-            res.send('Error interno del servidor.');
-        } else {
-            if (arrayVacio(rows)) {
-                console.log(rows);
-                res.json([{ mensaje: 'No existe el contacto solicitado' }])
-            } else {
-                res.json(rows)
-                console.log(rows);
-            }
-        }
-    });
-})
-    */
 // hay que parsear la info que manda el formulario, se usa el modulo bodyparser
 //const bodyParser=require('body-parser')
 // pasamos el bodyparser al middleware, con extended=false para que solo procese texto
 //contactosRouter.use(bodyParser.urlencoded({ extended: false }));
 
 contactosRouter.post('/nuevo', (req, res) => {
-
     let apellido = req.body.apellido;
     let nombres = req.body.nombres;
     let email = req.body.email;
@@ -140,37 +119,36 @@ contactosRouter.post('/nuevo', (req, res) => {
     pool.getConnection()
         .then(connection => {
             connection.query(sql, values)
-                .then(() => {
+                .then((result) => {
                     connection.release()
                     console.log('El contacto :' + JSON.stringify(nuevoContacto) + ' se agregó correctamente');
-                    res.json('El contacto :' + JSON.stringify(nuevoContacto) + ' se agregó correctamente');
+                    
+                    // Añadir el ID del nuevo contacto al objeto
+                    nuevoContacto.id = result.insertId;
+                    
+                    // Emitir el evento de nuevo contacto a todos los clientes conectados
+                    if (io) {
+                        io.emit('newContact', nuevoContacto);
+                    }
+                    
+                    res.json({
+                        message: 'El contacto se agregó correctamente',
+                        contact: nuevoContacto
+                    });
                 })
                 .catch(error => {
                     connection.release();
-                    console.error('Error al agregar en la base de datos:', err);
-                    res.send('Error al agregar en la base de datos:', err);
-                    reject(error);
+                    console.error('Error al agregar en la base de datos:', error);
+                    res.status(500).send('Error al agregar en la base de datos');
                 })
         })
         .catch(error => {
-            reject(error);
+            console.error('Error al obtener conexión:', error);
+            res.status(500).send('Error interno del servidor');
         })
-
-
-
-    /*
-    db.query(sql, values, (err, rows) => {
-        if (err) {
-            console.error('Error al agregar en la base de datos:', err);
-            res.send('Los Datos no se pudieron agregar en la base de datos');
-        } else {
-            res.send('El contacto :' + JSON.stringify(nuevoContacto) + ' se agregó correctamente');
-        }
-    }); */
-
 })
 
-
+//////////////////////////////////////////////////////////////////////////
 contactosRouter.put('/modificar', (req, res) => {
     let idContacto = req.body.idContacto;
     let apellido = req.body.apellido;
@@ -198,17 +176,6 @@ contactosRouter.put('/modificar', (req, res) => {
             reject(error);
         })
 
-
-    /*
-    db.query(sql, values, (err, rows) => {
-        if (err) {
-            console.error('Error al modificar en la base de datos:', err);
-            res.send('Los Datos no se pudieron modificar en la base de datos');
-        } else {
-            res.send('Se modificaron los datos del contacto con los siguientes datos ' + JSON.stringify(contactoActualizado));
-        }
-    });
-    */
 })
 
 contactosRouter.delete('/:id', (req, res) => {
@@ -233,14 +200,4 @@ contactosRouter.delete('/:id', (req, res) => {
             reject(error);
         })
 
-    /*
-    db.query(sql, (err, rows) => {
-        if (err) {
-            console.error('Error al consultar la base de datos:', err);
-            res.send('Error interno del servidor.');
-        } else {
-            res.send('Se eliminó el contacto cuyo id es ' + idContacto);
-        }
-    });
-    */
 })
